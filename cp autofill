@@ -1,0 +1,117 @@
+; Hotkey: Ctrl + Shift + F
+^+f::
+    ; Get the clipboard content
+    clipboardContent := Clipboard
+
+    ; Split the clipboard content into lines
+    StringSplit, lines, clipboardContent, `n
+
+    ; Paste the name (first line)
+    SendInput, % lines1
+    ; Move to the next field
+    Send, {Tab}
+
+    ; Paste the address (second line)
+    SendInput, % lines2
+    ; Move to the next field
+    Send, {Tab}
+
+    ; Split the third line into parts (city, province, and postal code)
+    cityProvincePostal := lines3
+
+    ; Identify the city, province, and postal code parts
+    RegExMatch(cityProvincePostal, "^(.*)\s(\w+)\s([A-Z]\d[A-Z]\s?\d[A-Z]\d)$", match)
+    
+    city := match1
+    province := match2
+    postalCode := match3
+
+    ; Remove any trailing comma from the city name
+    if (SubStr(city, 0) = ",")
+    {
+        city := SubStr(city, 1, -1)
+    }
+
+    ; Paste the City without the trailing comma
+    SendInput, % city
+    ; Move to the next field
+    Send, {Tab}
+
+    ; Normalize the province based on the first letter
+    province := StrLower(province)
+    firstLetter := SubStr(province, 1, 1)
+    switch firstLetter
+    {
+        case "a":
+            province := "Alberta"
+        case "b":
+            province := "British Columbia"
+        case "m":
+            province := "Manitoba"
+        case "n":
+            if (InStr(province, "newfoundland")) {
+                province := "Newfoundland and Labrador"
+            } else if (InStr(province, "nova")) {
+                province := "Nova Scotia"
+            } else if (InStr(province, "new")) {
+                province := "New Brunswick"
+            } else if (InStr(province, "nunavut")) {
+                province := "Nunavut"
+            } else {
+                province := "Northwest Territories"
+            }
+        case "o":
+            province := "Ontario"
+        case "p":
+            province := "Prince Edward Island"
+        case "q":
+            province := "Quebec"
+        case "s":
+            province := "Saskatchewan"
+        case "y":
+            province := "Yukon"
+    }
+
+    ; Use a switch statement to determine the number of down arrow presses based on the normalized province
+    switch province
+    {
+        case "Alberta":
+            Send, {Down 1}
+        case "British Columbia":
+            Send, {Down 2}
+        case "Manitoba":
+            Send, {Down 3}
+        case "New Brunswick":
+            Send, {Down 4}
+        case "Newfoundland and Labrador":
+            Send, {Down 5}
+        case "Nova Scotia":
+            Send, {Down 6}
+        case "Ontario":
+            Send, {Down 7}  ; Adjust this number based on the actual position
+        case "Prince Edward Island":
+            Send, {Down 8}
+        case "Quebec":
+            Send, {Down 9}
+        case "Saskatchewan":
+            Send, {Down 10}
+        case "Northwest Territories":
+            Send, {Down 11}
+        case "Nunavut":
+            Send, {Down 12}
+        case "Yukon":
+            Send, {Down 13}
+    }
+
+    ; Press Enter to select the province
+    Send, {Enter}
+    ; Move to the next field
+    Send, {Tab}
+
+    ; Remove any spaces from the Postal Code
+    StringReplace, postalCode, postalCode, %A_Space%, , All
+
+    ; Paste the Postal Code without spaces
+    SendInput, % postalCode
+
+    return
