@@ -114,4 +114,24 @@
     ; Paste the Postal Code without spaces
     SendInput, % postalCode
 
+    ; Get the last line
+    lastLine := lines%lines0%
+
+    ; Extract the phone number using RegEx
+    if (RegExMatch(lastLine, "Phone:\s*(\D?(\d{3})\D?\D?(\d{3})\D?\D?(\d{4}))", match))
+    {
+        phoneNumber := match1
+        ; Remove any non-digit characters from the phone number
+        StringReplace, phoneNumber, phoneNumber, -, , All
+        StringReplace, phoneNumber, phoneNumber, (, , All
+        StringReplace, phoneNumber, phoneNumber, ), , All
+        StringReplace, phoneNumber, phoneNumber, ., , All
+        StringReplace, phoneNumber, phoneNumber, `s, , All ; Remove spaces
+
+        ; Replace clipboard content with the cleaned-up phone number
+        Clipboard := phoneNumber
+    }
+
+    return
+
     return
