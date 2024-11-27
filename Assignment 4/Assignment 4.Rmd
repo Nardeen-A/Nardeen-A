@@ -1,0 +1,139 @@
+---
+title: "Assignment 4 ECN 726"
+author: "Nardeen Abdulkareem"
+date: "`r Sys.Date()`"
+output: pdf_document
+header-includes:
+  \usepackage{fvextra}
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+```{r setup, include = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
+# packages
+library(data.table)
+library(dplyr)
+library(ggnewscale)
+library(ggplot2)
+library(gridExtra)
+library(patchwork)
+library(pals)
+library(RColorBrewer)
+library(svglite)
+library(readxl)
+library(reshape)
+library(tidyr)
+library(tidyverse)
+library(viridis)
+library(viridisLite)
+library(rvest)
+library(sandwich)
+library(lmtest)
+library(rmarkdown)
+library(flexdashboard)
+library(haven)
+library(magrittr)
+library(reshape2)
+library(stargazer)
+library(ivreg)
+library(car)
+library(plm)
+library(rdrobust)
+library(qte)
+
+theme_set(theme_bw())
+theme_update(text = element_text(size=12.5))
+
+
+# data sets
+data_1 <- read.csv("E:\\School - work\\Term 8\\ECN 726\\Assignment 4\\assignment2_trackingRD.csv", header = TRUE)
+
+# misc
+quantile <- ci.qte(totalscore ~ tracking, data=subset(data_1,totalscore>0), se=T, probs=seq(0.05,0.95,0.05), iters=10)
+
+
+# regressions
+r_1 <- lm(totalscore ~ tracking + percentile + tracking:percentile, data = data_1)
+r_1_r <- coeftest(r_1, vcov = vcovHC(r_1, type = "HC1"))
+r_2 <- lm(totalscore ~ tracking + tracking:percentile, data = data_1)
+r_2_r <- coeftest(r_2, vcov = vcovHC(r_2, type = "HC1"))
+
+
+
+# diff in diff
+
+
+
+
+
+```
+
+\newpage
+
+## Question 1: Estimate a model with interaction effects that captures the how the effect of tracking varies with respect to a student’s initial percentile in the test score distribution. If we do not include initial percentile as a control, will the coefficient be biased up, down, or not at all? 
+We will use a regression model assuming that the study was carried out as a randomized controlled experiment. Bellow we can see that the estimate of the coefficient will be biased downwards with the exclusion of percentile as a control, this is due to omitted variable bias since $cor(X_1, X_2) \neq 0$ and $cor(Y, X_2) \neq 0$.
+
+```{r, include = TRUE, echo = FALSE, results = 'asis'}
+stargazer(r_1, r_1_r, header = FALSE, column.labels = c("RCT", "Robust SE"), type = 'latex', model.names = FALSE, model.numbers = FALSE, single.row = TRUE, font.size = "small", digits = 4)
+```
+
+```{r, include = TRUE, echo = FALSE, results = 'asis'}
+stargazer(r_2, r_2_r, header = FALSE, column.labels = c("RCT", "Robust SE"), type = 'latex', model.names = FALSE, model.numbers = FALSE, single.row = TRUE, font.size = "small", digits = 4)
+```
+
+## Question 2: Use the qte package to estimate the quantile treatment effects and include a graph. Do the results here tell us about whether tracking benefits the best or worst students? 
+
+The results do not tell us about whether tracking benefits the best or worst students; this is because quantile treatment effects tell us about how the influence of a treatment at a given quantile of the distribution. It does not convey information about where the individuals moves to and from on the distribution. We can't say that an individual from the bottom 5 percentile managed to move to the top 5 percentile because there is a  higher concentration at the right side of the distribution or how many individuals are at a certain percentile now. But, we can observe that the the average treatment effect at the bottom 5 percentile is approximately 0.39 on test scores. This means there is an increase of test scores as a result of the treatment in the bottom 5 percentile is 0.39.
+
+In this case we observe that overall the treatment was successful in providing a positive impact on the those treated. We also observe a higher treatment effect in the higher quantiles, which means that there is a effect of tracking on test scores for those in the upper percentiles.
+```{r}
+summary(quantile)
+```
+```{r, include = TRUE, echo = FALSE, message = FALSE, warning = FALSE, fig.align = 'left', fig.dim = c(5, 3.5), results = 'asis'}
+ggqte(quantile)
+```
+
+## Question 3: Lender’s risk model: Suppose a lender is making a loan of size L=1 to someone at an interest rate of 200% (i=2). The borrower has no collateral. The lender can pay a fixed cost to screen, monitor and enforce repayment to ensure a default rate of only 0.05, but this costs F=1. Alternatively, they can pay no fixed cost but then the default rate is 0.5.  Which option delivers a higher return to the lender? Which option would allow the lender to charge a lower interest rate if they made zero profit? 
+
+$(1 - d)(1 + i)L + dC - F = (1 + r)L + \pi \quad \quad \quad where, \quad C = 0, L = 1, i = 2$
+
+Case 1 where Fixed cost is one:  $(1 - 0.05)(1 + 2)1 - 1 = 1.85 = (1 + r)L + \pi$
+
+Case 1 where Fixed cost is zero: $(1 - 0.50)(1 + 2)1 - 0 = 1.50 = (1 + r)L + \pi$
+
+The lender achieves higher returns in the case where fixed costs are equal to one and the default rate is only 0.05. Next lets assume that $\pi = 0$ and solve for $i$, lets also assume that $r = 0.1$
+
+Case 1 where Fixed cost is one: $i = \frac{1+r}{1-d} + \frac{F-dC}{L(1-d)} - 1 = \frac{1+0.1}{1-0.05} + \frac{1 - 0.05(0)}{1(1-0.05)} - 1 = 1.21$
+
+Case 1 where Fixed cost is zero: $i = \frac{1+r}{1-d} + \frac{F-dC}{L(1-d)} - 1 = \frac{1+0.1}{1-0.5} + \frac{0 - 0.05(0)}{1(1-0.5)} - 1 = 2.2$
+
+We are able to charge a lower interest rate in the case where fixed costs are equal to one, the default rate is only 0.05, and profits are equal to zero.
+
+## Question 4: Lender’s risk model: Suppose a lender can make a loan to two different borrowers. The size of the loan L cannot be larger than the collateral C of the borrower. There is a fixed cost of 1 which ensures that the default risk is 0.05, and the lender’s opportunity cost of funds (r) is 0.1. Borrower A has collateral of 1 and Borrower B has collateral of 2. What is the lowest interest rate each of them could pay for the lender to break even (make zero profit).
+
+Let's say $L = C$ then, $i = \frac{1+r}{1-d} + \frac{F-dC}{L(1-d)} - 1$.
+
+In the first case ($L = C = 1$): $i = \frac{1+0.1}{1-0.05} + \frac{1-0.05(1)}{(1)(1-0.05)} - 1 = 1.15789$
+
+In the second case ($L = C = 2$): $i = \frac{1+0.1}{1-0.05} + \frac{1-0.05(2)}{(2)(1-0.05)} - 1 = 0.63157$
+
+The lowest interest rate when the loan size and the collateral are equal to one is 116 percent, and the lowest interest rate when the loan size and the collateral are equal to two is 63 percent.
+
+## Question 5: Risky types model: Half of the borrowers are safe and half of the borrowers are risky. Safe borrowers always repay, risky borrower default with 50% chance (in which case the lender gets 0). Safe borrowers return 100% (R=2) and risky borrowers return 300% (R=4) on a loan of size L=1. Solve for the interest rate that the lender will charge and the resulting profits if they cannot distinguish between types. 
+
+The interest rate for the safe type is 100 percent: $i = \frac{R}{L} - 1 = \frac{2}{1} - 1 = 1$
+
+The interest rate for the risky type is 300 percent: $i = \frac{R'}{L} - 1 = \frac{4}{1} - 1 = 3$
+
+The profit given based on the safe interest rate is 0.5: $\pi_{safe} = 0.5[p(L(1+i))-L] + 0.5[iL] = 0.5[0.5(1(1+1))-1] + 0.5[1(1)] = 0.5$
+
+The profit given based on the risky interest rate is 1: $\pi_{risky} = p[L(1+i)]-L = 0.5[1(1+3)]-1 = 1$
+
+## Question 6: Risky types model: If the lender can discriminate between safe and risky types and charge a higher interest rate to the risky types, how much profit could they make (a) selling only to the safe types and (b) selling to a population composed of 50% safe types and 50% risky types? 
+
+a) $\pi = iL = 1(1) = 1$
+
+b) $\pi = 0.5[p(L(1+i_{risky}))-L] + 0.5[i_{safe}L] = 0.5[0.5(1(1+3))-1] + 0.5[1(1)] = 1$
+
+
+
+
